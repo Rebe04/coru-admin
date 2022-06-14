@@ -7,13 +7,7 @@ import SessionDataUser from "../../components/SessionDataUser";
 
 export default function UserShow() {
   const { id } = useParams();
-  useEffect(() => {
-    try {
-      firebaseBuscarDoc();
-    } catch (error) {
-      console.log(error);
-    }
-  }, []);
+
   const [user, setUser] = useState({
     userName: "",
     habits: [],
@@ -21,6 +15,13 @@ export default function UserShow() {
     memories: "",
     logs: [],
   });
+  useEffect(() => {
+    try {
+      firebaseBuscarDoc();
+    } catch (error) {
+      console.log(error);
+    }
+  }, [user]);
 
   const [logs, setLogs] = useState([]);
   const fireStore = getFirestore();

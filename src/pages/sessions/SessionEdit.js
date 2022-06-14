@@ -4,42 +4,43 @@ import Presentation from "../../components/sessions/Presentation";
 import Question from "../../components/sessions/Question";
 import Range from "../../components/sessions/Range";
 import ContentWrapper from "../../layout/ContentWrapper";
-import { v4 as uuidv4 } from "uuid";
-import { getFirestore, doc, setDoc, getDoc } from "firebase/firestore";
+import { getFirestore, doc, getDoc, updateDoc } from "firebase/firestore";
 import { app } from "../../firebase/credenciales";
 import { Formik, Form, Field } from "formik";
 import * as Yup from "yup";
 import { useNavigate } from "react-router-dom";
 import { useParams } from "react-router-dom";
+import EditableQuestion from "../../components/EditableQuestion";
+import ScreenQuestion from "../../components/ScreenQuestion";
+import EditablePresentation from "../../components/EditablePresentation";
+import ScreenPresentation from "../../components/ScreenPresentation";
+import EditableRange from "../../components/EditableRange";
+import ScreenRange from "../../components/ScreenRange";
+import EditableMessage from "../../components/EditableMessage";
+import ScreenMessage from "../../components/ScreenMessage";
 
 export default function SessionEdit() {
+  const [editableSession, setEditableSession] = useState(0);
+  const [indexActual, setIndexActual] = useState("");
+  const [screen, setScreen] = useState("choose");
+  const [viewScreenNew, setViewScreenNew] = useState(false);
+  const [data, setData] = useState([]);
+  const [fileUrl, setFileUrl] = useState("");
+  const [session, setSession] = useState({});
   const { id } = useParams();
+
   useEffect(() => {
     try {
       firebaseBuscarDoc();
-      const initialValues = {
-        name: session.name,
-        category: session.category,
-        duration: session.duration,
-        section: session.section,
-        subsection: session.subsection,
-        type: session.type,
-        file: "",
-        xp: session.xp,
-      };
     } catch (error) {
       console.log(error);
     }
   }, []);
-  const [screen, setScreen] = useState("choose");
-  const [viewScreenNew, setViewScreenNew] = useState(false);
-  const [data, setData] = useState([]);
-  const [fileUrl, setFileUrl] = useState(null);
 
   const navigate = useNavigate();
   const fireStore = getFirestore();
 
-  const [session, setSession] = useState({});
+  const db = getFirestore();
 
   const firebaseBuscarDoc = async () => {
     let consulta = doc(fireStore, "sessions", id);
@@ -48,40 +49,20 @@ export default function SessionEdit() {
     setData(resultado.data().data);
   };
 
-  const photo = {
-    data: {
-      description: " You just made an important step on your journey.",
-      title: "Congratulations",
-    },
-    type: "photo",
+  const editScreen = (index) => {
+    setEditableSession(1);
+    setIndexActual(index);
   };
 
-  const calification = {
-    data: {
-      question: "Do you think that this session was helpful for you?",
-    },
-    type: "calification",
+  const saveScreen = () => {
+    setEditableSession(0);
+    setIndexActual(null);
   };
 
-  const feedback = {
-    data: {
-      description:
-        "Do you want to share any thoughts on what we can do better?",
-      posibilities: [
-        "not feeling it today",
-        "too long",
-        "unclear instructions",
-        "made me feel uncomfortable",
-      ],
-      question: "What went wrong?",
-    },
-    type: "feedback",
-  };
+  const deleteScreen = (i) => {
+    const itemsActualizados = data.filter((item, index) => index !== i);
 
-  const firebaseCrear = (coleccion, objeto) => {
-    objeto.id = uuidv4();
-    let referencia = doc(getFirestore(), coleccion, objeto.id);
-    setDoc(referencia, objeto);
+    setData(itemsActualizados);
   };
 
   const changeComponent = (e) => {
@@ -104,21 +85,32 @@ export default function SessionEdit() {
     ]);
   };
 
+  const generarId = () => {
+    const random = Math.random().toString(36).substr(2);
+    const fecha = Date.now().toString(36);
+    return random + fecha;
+  };
+
   const onFileChange = async (e) => {
     const file = e.target.files[0];
     const storageRef = app.storage().ref();
-    const fileRef = storageRef.child(file.lastModified + file.name);
+    const fileName = generarId();
+    const fileRef = storageRef.child(fileName);
     await fileRef.put(file);
     setFileUrl(await fileRef.getDownloadURL());
   };
 
-  const createNewSession = (dataSession) => {
+  const update = async (id, object) => {
+    await updateDoc(doc(db, "sessions", id), object);
+  };
+
+  const updateSession = (dataSession) => {
     let object = Object.assign(dataSession);
-    setData([...data, photo, calification, feedback]);
     object.data = data;
-    object.source = fileUrl;
+    object.id = session.id;
     setSession(object);
-    firebaseCrear("sessions", session);
+    object.source = fileUrl;
+    update(object.id, object);
     setScreen("choose");
     setViewScreenNew(false);
     setData([]);
@@ -157,7 +149,7 @@ export default function SessionEdit() {
               .required("Subsection is required"),
             type: Yup.string().max(255).required("Type is required"),
           })}
-          onSubmit={createNewSession}
+          onSubmit={updateSession}
           enableReinitialize
         >
           {({ errors, touched, values }) => (
@@ -294,10 +286,9 @@ export default function SessionEdit() {
                       </div>
                       <div className="form-group col-md-6">
                         <label htmlFor="file">Session image</label>
-                        <Field
+                        <input
                           type="file"
                           name="file"
-                          value={values.file}
                           className="form-control-file"
                           onChange={onFileChange}
                         />
@@ -333,7 +324,7 @@ export default function SessionEdit() {
             </button>
           )}
         </div>
-        {viewScreenNew === true ? (
+        {viewScreenNew && (
           <div className="col-lg-12 layout-spacing layout-top-spacing widget-content-area">
             <div className="statbox widget box box-shadow">
               <div className="widget-content">
@@ -368,7 +359,7 @@ export default function SessionEdit() {
               </div>
             </div>
           </div>
-        ) : null}
+        )}
         <div className="col-lg-12 layout-spacing layout-top-spacing widget-content-area">
           <div className="statbox widget box box-shadow">
             <div className="widget-content">
@@ -381,43 +372,95 @@ export default function SessionEdit() {
                     <div className="col-lg-12 layout-spacing layout-top-spacing widget-content-area my-5 rounded-lg">
                       <div className="statbox widget box box-shadow">
                         <div className="widget-content">
-                          {screen.type === "presentation" ? (
-                            <div clasName="d-flex justify-content-between">
-                              <h5>{screen.data.title}</h5>
-                              <p>{screen.data.description}</p>
-                              <div>Screen type: {screen.type}</div>
-                            </div>
-                          ) : null}
-                          {screen.type === "question" ? (
+                          {screen.type === "presentation" && (
                             <div>
-                              <h5>{screen.data.question}</h5>
-                              <p>{screen.data.description}</p>
-                              <div>Screen type: {screen.type}</div>
+                              {editableSession === 1 &&
+                              indexActual === index ? (
+                                <EditablePresentation
+                                  screen={screen}
+                                  saveScreen={saveScreen}
+                                  data={data}
+                                  index={index}
+                                  setData={setData}
+                                />
+                              ) : (
+                                <ScreenPresentation
+                                  screen={screen}
+                                  editScreen={editScreen}
+                                  index={index}
+                                  setData={setData}
+                                  deleteScreen={deleteScreen}
+                                />
+                              )}
                             </div>
-                          ) : null}
-                          {screen.type === "range" ? (
+                          )}
+                          {screen.type === "question" && (
                             <div>
-                              <h5>{screen.data.question}</h5>
-                              <div className="d-flex justify-content-around pt-3">
-                                <div clasName="w-25">
-                                  <p>{screen.data.min}</p>
-                                </div>
-                                <div clasName="w-50">
-                                  <input type="range" />
-                                </div>
-                                <div clasName="w-25">
-                                  <p>{screen.data.max}</p>
-                                </div>
-                              </div>
-                              <div>Screen type: {screen.type}</div>
+                              {editableSession === 1 &&
+                              indexActual === index ? (
+                                <EditableQuestion
+                                  screen={screen}
+                                  saveScreen={saveScreen}
+                                  data={data}
+                                  index={index}
+                                  setData={setData}
+                                />
+                              ) : (
+                                <ScreenQuestion
+                                  editScreen={editScreen}
+                                  screen={screen}
+                                  index={index}
+                                  setData={setData}
+                                  data={data}
+                                  deleteScreen={deleteScreen}
+                                />
+                              )}
                             </div>
-                          ) : null}
-                          {screen.type === "message" ? (
+                          )}
+                          {screen.type === "range" && (
                             <div>
-                              <h5>{screen.data.message}</h5>
-                              <div>Screen type: {screen.type}</div>
+                              {editableSession === 1 &&
+                              indexActual === index ? (
+                                <EditableRange
+                                  screen={screen}
+                                  saveScreen={saveScreen}
+                                  data={data}
+                                  index={index}
+                                  setData={setData}
+                                />
+                              ) : (
+                                <ScreenRange
+                                  screen={screen}
+                                  editScreen={editScreen}
+                                  index={index}
+                                  setData={setData}
+                                  deleteScreen={deleteScreen}
+                                />
+                              )}
                             </div>
-                          ) : null}
+                          )}
+                          {screen.type === "message" && (
+                            <div>
+                              {editableSession === 1 &&
+                              indexActual === index ? (
+                                <EditableMessage
+                                  screen={screen}
+                                  saveScreen={saveScreen}
+                                  data={data}
+                                  index={index}
+                                  setData={setData}
+                                />
+                              ) : (
+                                <ScreenMessage
+                                  screen={screen}
+                                  editScreen={editScreen}
+                                  index={index}
+                                  setData={setData}
+                                  deleteScreen={deleteScreen}
+                                />
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>

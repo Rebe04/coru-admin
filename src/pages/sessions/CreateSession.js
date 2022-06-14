@@ -56,6 +56,12 @@ export default function CreateSession() {
     setDoc(referencia, objeto);
   };
 
+  const generarId = () => {
+    const random = Math.random().toString(36).substr(2);
+    const fecha = Date.now().toString(36);
+    return random + fecha;
+  };
+
   const changeComponent = (e) => {
     const option = e.target.value;
     setScreen(option);
@@ -79,7 +85,8 @@ export default function CreateSession() {
   const onFileChange = async (e) => {
     const file = e.target.files[0];
     const storageRef = app.storage().ref();
-    const fileRef = storageRef.child(file.lastModified + file.name);
+    const nameFile = generarId();
+    const fileRef = storageRef.child(nameFile);
     await fileRef.put(file);
     setFileUrl(await fileRef.getDownloadURL());
   };
@@ -385,13 +392,13 @@ export default function CreateSession() {
                         <div>
                           <h5>{screen.data.question}</h5>
                           <div className="d-flex justify-content-around pt-3">
-                            <div clasName="w-25">
+                            <div className="w-25">
                               <p>{screen.data.min}</p>
                             </div>
-                            <div clasName="w-50">
+                            <div className="w-50">
                               <input type="range" />
                             </div>
-                            <div clasName="w-25">
+                            <div className="w-25">
                               <p>{screen.data.max}</p>
                             </div>
                           </div>

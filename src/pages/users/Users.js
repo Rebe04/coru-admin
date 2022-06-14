@@ -1,14 +1,25 @@
-import React, { useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { deleteDoc, doc, getFirestore } from "firebase/firestore";
+import React from "react";
+import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../hooks/useAuth";
 import ContentWrapper from "../../layout/ContentWrapper";
 
 export default function Users() {
-  const navigate = useNavigate();
-  const { usersData, habitsData, exersicesData, getDataFirebase } = useAuth();
+  // const navigate = useNavigate();
+  const { usersData } = useAuth();
+  const [usersState, setUsersState] = useState(usersData);
 
-  const createUserRedirect = () => {
-    navigate("/users/createuser");
+  const db = getFirestore();
+
+  // const createUserRedirect = () => {
+  //   navigate("/users/createuser");
+  // };
+
+  const deleteUser = async (id) => {
+    await deleteDoc(doc(db, "users", id));
+    const usersUpdate = usersState.filter((user) => user.id !== id);
+    setUsersState(usersUpdate);
   };
 
   return (
@@ -17,12 +28,12 @@ export default function Users() {
         <div className="w-100 d-flex justify-content-between my-3">
           <h1>Users</h1>
           <div>
-            <button
+            {/* <button
               className="btn btn-success btn-sm"
               onClick={createUserRedirect}
             >
               Create user
-            </button>
+            </button> */}
           </div>
         </div>
         <div>
@@ -39,17 +50,23 @@ export default function Users() {
                 </tr>
               </thead>
               <tbody>
-                {usersData.map((user) => (
-                  <tr>
+                {usersState.map((user, index) => (
+                  <tr key={index}>
                     <td width="40%">{user.id}</td>
                     <td>{user.username}</td>
-                    <td wi dth="15%" className="text-center">
+                    <td width="15%" className="text-center">
                       <Link
                         to={`/users/${user.id}`}
                         className="btn btn-success btn-sm"
                       >
                         <i className="fas fa-eye mr-2"></i>
                       </Link>
+                      <button
+                        onClick={() => deleteUser(user.id)}
+                        className="btn btn-danger btn-sm ml-2"
+                      >
+                        <i className="fas fa-trash"></i>
+                      </button>
                     </td>
                   </tr>
                 ))}

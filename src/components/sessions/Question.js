@@ -25,21 +25,23 @@ export default function Question(props) {
     <>
       <h4 className="mb-4">Screen | Type: Question</h4>
       <div className="form-group mb-4">
-        <label className="control-label">Question</label>
+        <label forhtml="question-create" className="control-label">
+          Question
+        </label>
         <input
           type="text"
           name="question"
           onChange={question}
-          id="question"
+          id="question-create"
           value={screenData.question}
           className="form-control"
         />
       </div>
       <div className="form-group mb-4">
-        <label forhtml="exampleFormControlTextarea1">Description</label>
+        <label forhtml="description-question-create">Description</label>
         <textarea
           className="form-control"
-          id="description"
+          id="description-question-create"
           name="description"
           rows="3"
           onChange={description}

@@ -1,15 +1,29 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useAuth } from "../../hooks/useAuth";
 import { Link, useNavigate } from "react-router-dom";
 import ContentWrapper from "../../layout/ContentWrapper";
+import { deleteDoc, doc, getFirestore } from "firebase/firestore";
 
 export default function Sessions() {
+  const [sessionsState, setSessionsState] = useState([]);
   const navigate = useNavigate();
   const { sessions } = useAuth();
+  useEffect(() => {
+    setSessionsState(sessions);
+  }, []);
+
+  const db = getFirestore();
+
+  const deleteSession = async (id) => {
+    await deleteDoc(doc(db, "sessions", id));
+    const sessionsUpdate = sessionsState.filter((session) => session.id !== id);
+    setSessionsState(sessionsUpdate);
+  };
 
   const createSessionRedirect = () => {
     navigate("/sessions/createsession");
   };
+
   return (
     <ContentWrapper>
       <div className="w-100">
@@ -39,7 +53,7 @@ export default function Sessions() {
                 </tr>
               </thead>
               <tbody>
-                {sessions.map((session, index) => (
+                {sessionsState.map((session, index) => (
                   <tr key={index}>
                     <td>{session.id}</td>
                     <td>{session.name}</td>
@@ -60,9 +74,12 @@ export default function Sessions() {
                       >
                         <i className="fas fa-edit"></i>
                       </Link>
-                      <Link to="" className="btn btn-danger btn-sm ml-2">
+                      <button
+                        onClick={() => deleteSession(session.id)}
+                        className="btn btn-danger btn-sm ml-2"
+                      >
                         <i className="fas fa-trash"></i>
-                      </Link>
+                      </button>
                     </td>
                   </tr>
                 ))}

@@ -10,6 +10,7 @@ export default function Sessions() {
   const createSessionRedirect = () => {
     navigate("/sessions/createsession");
   };
+
   return (
     <ContentWrapper>
       <div className="w-100">
